@@ -5,7 +5,6 @@
  "description": "Image Cache is a very simple PHP module that accepts an image source and will compress and cache the file, move it to a new directory, and return the cache source for the image.",
  "keywords": ["cache","caching","php cache","image cache"],
  "homepage": "https://yucelyavuz.com.tr",
- "license": "Creative Commons Attribution",
  "authors": [
         {
             "name": "Yücel Yavuz",
