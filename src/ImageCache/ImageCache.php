@@ -125,7 +125,7 @@ class ImageCache {
             "quality" => array(
                 "jpeg" => 85,
                 "png" => 8,
-                "webp" => 80  // WebP için varsayılan kalite eklendi
+                "webp" => 60  // WebP için varsayılan kalite eklendi
             ),
             "cached_image_directory" => dirname(__FILE__) . "/php-image-cache",
             "cached_image_url" => "",
@@ -167,9 +167,9 @@ class ImageCache {
      * @return string The source file to be referenced after compressing an image
      */
     public function cache($image, $version = "") {
-ob_start();
-        if ( ! is_writable($this->cached_image_directory))
-            $this->error( $this->cached_image_directory . ' must writable!');
+        ob_start();
+        if (!is_writable($this->cached_image_directory))
+            $this->error($this->cached_image_directory . ' must be writable!');
 
         if (!is_string($image))
             $this->error('Image source given must be a string.');
@@ -178,16 +178,22 @@ ob_start();
         $this->image_src_version = $version;
         $this->pre_set_class_vars();
 
-        // If the image hasn't been server up at this point, fetch, compress, cache, and return
+        // If the image hasn't been served up at this point, fetch, compress, cache, and return
         if ($this->cached_file_exists()) {
             $this->src_filesize = filesize($this->image_src);
             $this->cached_filesize = filesize($this->cached_filename);
             if ($this->src_filesize < $this->cached_filesize) {
                 ob_end_clean();
-                return $this->docroot_to_url($this->image_src);
+                return [
+                    'url' => $this->docroot_to_url($this->image_src),
+                    'filename' => basename($this->image_src)
+                ];
             }
             ob_end_clean();
-            return $this->docroot_to_url();
+            return [
+                'url' => $this->docroot_to_url(),
+                'filename' => basename($this->cached_filename)
+            ];
         }
         if ($this->is_remote) {
             $this->download_image();
@@ -198,10 +204,16 @@ ob_start();
         $this->cached_filesize = filesize($this->cached_filename);
         if ($this->src_filesize < $this->cached_filesize) {
             ob_end_clean();
-            return $this->docroot_to_url($this->image_src);
+            return [
+                'url' => $this->docroot_to_url($this->image_src),
+                'filename' => basename($this->image_src)
+            ];
         }
         ob_end_clean();
-        return $this->docroot_to_url();
+        return [
+            'url' => $this->docroot_to_url(),
+            'filename' => basename($this->cached_filename)
+        ];
     }
 
     /**
@@ -399,6 +411,8 @@ ob_start();
         return false;
     }
 
+    
+
     /**
      * Stores the file's mime type and validates that the file being compressed is indeed an image.
      */
@@ -420,6 +434,35 @@ ob_start();
      */
     private function set_memory_limit() {
         $this->memory_limit = ini_get('memory_limit');
+    }
+
+    /**
+     * Set quality for a specific image type
+     *
+     * @param string $type Image type (jpeg, png, or webp)
+     * @param int $value Quality value
+     * @return void
+     */
+    public function setQuality($type, $value) {
+        if (property_exists($this->quality, $type)) {
+            $this->quality->$type = $value;
+        } else {
+            $this->error("Invalid image type for quality setting.");
+        }
+    }
+
+    /**
+     * Get current quality setting for a specific image type
+     *
+     * @param string $type Image type (jpeg, png, or webp)
+     * @return int Current quality value
+     */
+    public function getQuality($type) {
+        if (property_exists($this->quality, $type)) {
+            return $this->quality->$type;
+        } else {
+            $this->error("Invalid image type for quality setting.");
+        }
     }
 
     /**
